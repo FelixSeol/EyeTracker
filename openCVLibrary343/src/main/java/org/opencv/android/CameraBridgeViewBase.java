@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.opencv.BuildConfig;
 import org.opencv.R;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 
@@ -151,6 +152,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
 
         public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
              Mat result = null;
+             Core.flip(inputFrame.rgba(), inputFrame.rgba(), 1);
              switch (mPreviewFormat) {
                 case RGBA:
                     result = mOldStyleListener.onCameraFrame(inputFrame.rgba());

@@ -5,8 +5,8 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
-set(pathOPENCV C:/Users/felixxseol/workspace/opencv-3.4.3-android-sdk/OpenCV-android-sdk)
-set(pathPROJECT C:/Users/felixxseol/AndroidStudioProjects/Eyetracker)
+set(pathOPENCV C:/Users/felixseol/workspace/OpenCV-android-sdk)
+set(pathPROJECT C:/Users/felixseol/workspace/EyeTracker)
 
 set(pathLIBOPENCV_JAVA ${pathPROJECT}/app/src/main/JniLibs/${ANDROID_ABI}/libopencv_java3.so)
 
@@ -41,12 +41,7 @@ set_target_properties(lib_opencv PROPERTIES IMPORTED_LOCATION ${pathLIBOPENCV_JA
 # you want to add. CMake verifies that the library exists before
 # completing its build.
 
-find_library( # Sets the name of the path variable.
-              log-lib
-
-              # Specifies the name of the NDK library that
-              # you want CMake to locate.
-              log )
+find_library( android-lib android )
 
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
@@ -55,7 +50,7 @@ find_library( # Sets the name of the path variable.
 target_link_libraries( # Specifies the target library.
                        native-lib
                        lib_opencv
-
+                        ${android-lib}
                        # Links the target library to the log library
                        # included in the NDK.
                        ${log-lib} )
