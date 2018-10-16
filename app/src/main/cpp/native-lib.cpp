@@ -59,7 +59,7 @@ Java_com_example_felixxseol_eyetracker_MainActivity_detect(JNIEnv *env, jobject 
     float resizeRatio = resize(img_gray, img_resize, 640);
 
     //-- Detect faces
-    ((CascadeClassifier *) cascadeClassifier_face)->detectMultiScale( img_resize, faces, 1.1, 2, 0|CASCADE_SCALE_IMAGE, Size(30, 30) );
+    ((CascadeClassifier *) cascadeClassifier_face)->detectMultiScale( img_resize, faces, 1.1, 2, 0|CASCADE_SCALE_IMAGE, Size(200, 200) );
     __android_log_print(ANDROID_LOG_DEBUG, (char *) "native-lib :: ", (char *) "face %d found. ", faces.size());
     for( int i = 0; i < faces.size(); i++) {
         double real_facesize_x = faces[0].x / resizeRatio;
@@ -73,7 +73,7 @@ Java_com_example_felixxseol_eyetracker_MainActivity_detect(JNIEnv *env, jobject 
         Rect face_area(real_facesize_x, real_facesize_y, real_facesize_width, real_facesize_height);
         __android_log_print(ANDROID_LOG_DEBUG, (char *) "native-lib :: ", (char *) "Face ROI X : %f, Y : %f", real_facesize_x, real_facesize_y);
         __android_log_print(ANDROID_LOG_DEBUG, (char *) "native-lib :: ", (char *) "Face ROI width : %f, height : %f", real_facesize_width, real_facesize_height);
-        if (real_facesize_width > 800){
+
             rect_color = Scalar(0, 255, 255);
             img_input(face_area).copyTo(img_result(face_area));
 
@@ -82,7 +82,7 @@ Java_com_example_felixxseol_eyetracker_MainActivity_detect(JNIEnv *env, jobject 
             //-- In each face, detect eyes
             ((CascadeClassifier *) cascadeClassifier_eye)->detectMultiScale(faceROI, eyes, 1.1, 2,
                                                                             0 | CASCADE_SCALE_IMAGE,
-                                                                            Size(30, 30));
+                                                                            Size(80, 80));
 
             for (size_t j = 0; j < eyes.size(); j++) {
                 double real_eye_x = real_facesize_x + eyes[j].x;
@@ -101,6 +101,6 @@ Java_com_example_felixxseol_eyetracker_MainActivity_detect(JNIEnv *env, jobject 
 //              circle(img_result, eye_center, radius, Scalar(255, 0, 0), 5, 8, 0);
             }
             rectangle(img_result, face_area, rect_color, 8, 8, 0);
-        }
+
     }
 }
