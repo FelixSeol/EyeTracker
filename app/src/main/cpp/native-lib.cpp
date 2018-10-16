@@ -1,6 +1,9 @@
 #include <jni.h>
 #include <opencv2/opencv.hpp>
 #include <android/log.h>
+#include <constants.h>
+
+#include "findEyeCenter.h"
 
 using namespace cv;
 using namespace std;
@@ -8,6 +11,63 @@ using namespace std;
 cv::Point lastPoint;
 std::vector<cv::Point> centers;
 cv::Point mousePoint;
+//
+//void findEyes(cv::Mat frame_gray, cv::Rect face, Mat& img_result) {
+//    cv::Mat faceROI = frame_gray(face);
+//    cv::Mat debugFace = faceROI;
+//
+//    if (kSmoothFaceImage) {
+//        double sigma = kSmoothFaceFactor * face.width;
+//        GaussianBlur( faceROI, faceROI, cv::Size( 0, 0 ), sigma);
+//    }
+//    //-- Find eye regions and draw them
+//    int eye_region_width = face.width * (kEyePercentWidth/100.0);
+//    int eye_region_height = face.width * (kEyePercentHeight/100.0);
+//    int eye_region_top = face.height * (kEyePercentTop/100.0);
+//    cv::Rect leftEyeRegion(face.width*(kEyePercentSide/100.0),
+//                           eye_region_top,eye_region_width,eye_region_height);
+//    cv::Rect rightEyeRegion(face.width - eye_region_width - face.width*(kEyePercentSide/100.0),
+//                            eye_region_top,eye_region_width,eye_region_height);
+//
+//    //-- Find Eye Centers
+//    cv::Point leftPupil = findEyeCenter(faceROI,leftEyeRegion);
+//    cv::Point rightPupil = findEyeCenter(faceROI,rightEyeRegion);
+//    // get corner regions
+//    cv::Rect leftRightCornerRegion(leftEyeRegion);
+//    leftRightCornerRegion.width -= leftPupil.x;
+//    leftRightCornerRegion.x += leftPupil.x;
+//    leftRightCornerRegion.height /= 2;
+//    leftRightCornerRegion.y += leftRightCornerRegion.height / 2;
+//    cv::Rect leftLeftCornerRegion(leftEyeRegion);
+//    leftLeftCornerRegion.width = leftPupil.x;
+//    leftLeftCornerRegion.height /= 2;
+//    leftLeftCornerRegion.y += leftLeftCornerRegion.height / 2;
+//    cv::Rect rightLeftCornerRegion(rightEyeRegion);
+//    rightLeftCornerRegion.width = rightPupil.x;
+//    rightLeftCornerRegion.height /= 2;
+//    rightLeftCornerRegion.y += rightLeftCornerRegion.height / 2;
+//    cv::Rect rightRightCornerRegion(rightEyeRegion);
+//    rightRightCornerRegion.width -= rightPupil.x;
+//    rightRightCornerRegion.x += rightPupil.x;
+//    rightRightCornerRegion.height /= 2;
+//    rightRightCornerRegion.y += rightRightCornerRegion.height / 2;
+//    rectangle(debugFace,leftRightCornerRegion,200);
+//    rectangle(debugFace,leftLeftCornerRegion,200);
+//    rectangle(debugFace,rightLeftCornerRegion,200);
+//    rectangle(debugFace,rightRightCornerRegion,200);
+//    // change eye centers to face coordinates
+//    rightPupil.x += rightEyeRegion.x;
+//    rightPupil.y += rightEyeRegion.y;
+//    leftPupil.x += leftEyeRegion.x;
+//    leftPupil.y += leftEyeRegion.y;
+//    // draw eye centers
+//    circle(debugFace, rightPupil, 3, 1234);
+//    circle(debugFace, leftPupil, 3, 1234);
+////
+////    cv::Rect roi( cv::Point( 0, 0 ), faceROI.size());
+////    cv::Mat destinationROI = img_result( roi );
+////    faceROI.copyTo( destinationROI );
+//}
 
 float resize(Mat img_src, Mat &img_resize, int resize_width){
     float scale = resize_width / (float)img_src.cols ;
@@ -130,39 +190,44 @@ Java_com_example_felixxseol_eyetracker_MainActivity_detect(JNIEnv *env, jobject 
     //-- Detect faces
     std::vector<Rect> faces;
     ((CascadeClassifier *) cascadeClassifier_face)->detectMultiScale( img_gray, faces, 1.1, 2, 0|CASCADE_SCALE_IMAGE, Size(400, 400) );
-    if(faces.size() == 0) return;
     __android_log_print(ANDROID_LOG_DEBUG, (char *) "native-lib :: ", (char *) "face %d found. ", faces.size());
-    Mat faceROI = img_gray(faces[0]);
-    std::vector<Rect> eyes;
-    //-- In each face, detect eyes
-    ((CascadeClassifier *) cascadeClassifier_eye)->detectMultiScale(faceROI, eyes, 1.1, 2,
-                                                                    0 | CASCADE_SCALE_IMAGE,
-                                                                    Size(80, 80));
-    rectangle(img_result, faces[0].tl(), faces[0].br(), Scalar(0, 255, 255), 2);
-    if(eyes.size() != 2) return;
-    for (Rect &eye : eyes) {
-        rectangle(img_result, faces[0].tl() + eye.tl(), faces[0].tl() + eye.br(), Scalar(255, 255, 255), 2);
-        __android_log_print(ANDROID_LOG_DEBUG, (char *) "native-lib :: ", (char *) "eyes %d found. ", eyes.size());
-    }
-    Rect eyeRect = getLeftmostEye(eyes);
-    Mat eyeROI = img_gray(eyeRect);
-    equalizeHist(eyeROI, eyeROI);
-    std::vector<Vec3f> circles;
-    HoughCircles(eyeROI, circles, CV_HOUGH_GRADIENT, 1, eyeROI.cols / 8, 250, 15, eyeROI.rows / 8, eyeROI.rows / 3);
-    if (circles.size() > 0){
-        Vec3f eyeball = getEyeball(eyeROI, circles);
-        Point center(eyeball[0], eyeball[1]);
-        centers.push_back(center);
-        center = stabilize(centers, 3);
-        if (centers.size() > 1)
-        {
-            Point diff;
-            diff.x = (center.x - lastPoint.x) * 20;
-            diff.y = (center.y - lastPoint.y) * -30;
-        }
-        lastPoint = center;
-        int radius = (int)eyeball[2];
-        circle(img_result, faces[0].tl() + eyeRect.tl() + center, radius, Scalar(0, 0, 255), 2);
-        circle(eyeROI, center, radius, cv::Scalar(255, 255, 255), 2);
-    }
+    Rect face = faces[0];
+    rectangle(img_result, face, 1234);
+
+//    if(faces.size() == 0) return;
+//    findEyes(img_gray, face, img_result);
+
+//    std::vector<Rect> eyes;
+//    //-- In each face, detect eyes
+//    ((CascadeClassifier *) cascadeClassifier_eye)->detectMultiScale(faceROI, eyes, 1.1, 2,
+//                                                                    0 | CASCADE_SCALE_IMAGE,
+//                                                                    Size(80, 80));
+//    rectangle(img_result, faces[0].tl(), faces[0].br(), Scalar(0, 255, 255), 2);
+//    if(eyes.size() != 2) return;
+//    for (Rect &eye : eyes) {
+//        rectangle(img_result, faces[0].tl() + eye.tl(), faces[0].tl() + eye.br(), Scalar(255, 255, 255), 2);
+//        __android_log_print(ANDROID_LOG_DEBUG, (char *) "native-lib :: ", (char *) "eyes %d found. ", eyes.size());
+//        findEyeCenter(faceROI, eye);
+//    }
+//    Rect eyeRect = getLeftmostEye(eyes);
+//    Mat eyeROI = img_gray(eyeRect);
+//    equalizeHist(eyeROI, eyeROI);
+//    std::vector<Vec3f> circles;
+//    HoughCircles(eyeROI, circles, CV_HOUGH_GRADIENT, 1, eyeROI.cols / 8, 250, 15, eyeROI.rows / 8, eyeROI.rows / 3);
+//    if (circles.size() > 0){
+//        Vec3f eyeball = getEyeball(eyeROI, circles);
+//        Point center(eyeball[0], eyeball[1]);
+//        centers.push_back(center);
+//        center = stabilize(centers, 3);
+//        if (centers.size() > 1)
+//        {
+//            Point diff;
+//            diff.x = (center.x - lastPoint.x) * 20;
+//            diff.y = (center.y - lastPoint.y) * -30;
+//        }
+//        lastPoint = center;
+//        int radius = (int)eyeball[2];
+//        circle(img_result, faces[0].tl() + eyeRect.tl() + center, radius, Scalar(0, 0, 255), 2);
+//        circle(eyeROI, center, radius, cv::Scalar(255, 255, 255), 2);
+//    }
 }

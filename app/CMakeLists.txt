@@ -31,8 +31,7 @@ add_library( # Sets the name of the library.
              # Provides a relative path to your source file(s).
             src/main/cpp/native-lib.cpp
             src/main/cpp/findEyeCenter.cpp
-            src/main/cpp/findEyeCorner.cpp
-            src/main/cpp/helpers.cpp)
+        src/main/cpp/helpers.cpp)
 
 add_library( lib_opencv SHARED IMPORTED )
 
