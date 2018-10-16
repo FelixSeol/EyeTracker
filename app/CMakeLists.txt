@@ -14,7 +14,8 @@ set(pathLIBOPENCV_JAVA ${pathPROJECT}/app/src/main/JniLibs/${ANDROID_ABI}/libope
 set(CMAKE_VERBOSE_MAKEFILE on)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 
-include_directories(${pathOPENCV}/sdk/native/jni/include)
+include_directories(${pathOPENCV}/sdk/native/jni/include
+                    src/main/cpp/include)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -22,13 +23,16 @@ include_directories(${pathOPENCV}/sdk/native/jni/include)
 # Gradle automatically packages shared libraries with your APK.
 
 add_library( # Sets the name of the library.
-             native-lib
+            native-lib
 
              # Sets the library as a shared library.
-             SHARED
+            SHARED
 
              # Provides a relative path to your source file(s).
-             src/main/cpp/native-lib.cpp )
+            src/main/cpp/native-lib.cpp
+            src/main/cpp/findEyeCenter.cpp
+            src/main/cpp/findEyeCorner.cpp
+            src/main/cpp/helpers.cpp)
 
 add_library( lib_opencv SHARED IMPORTED )
 
@@ -49,10 +53,10 @@ find_library( android-log log)
 # build script, prebuilt third-party libraries, or system libraries.
 
 target_link_libraries( # Specifies the target library.
-                       native-lib
-                       lib_opencv
+                        native-lib
+                        lib_opencv
                         ${android-lib}
                        # Links the target library to the log library
                        # included in the NDK.
-                       ${log-lib}
+                        ${log-lib}
                         ${android-log})
